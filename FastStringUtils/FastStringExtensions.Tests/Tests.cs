@@ -12,6 +12,7 @@ namespace FastStringExtensions.Tests
     {
         private const string TEXT = "    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua       ";
         private const string TEXT_2 = "    Lorem ipsum dolor sit omet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua       ";
+        private const string NUMBERS = "1, 43, 11, 2";
 
         [Fact]
         public void Test_Substring_1()
@@ -163,6 +164,122 @@ namespace FastStringExtensions.Tests
         {
             var original = TEXT.Substring(10, 10).CompareTo(TEXT_2.Substring(10, 10));
             var fast = TEXT._ComparePart(10, TEXT_2, 10, 10);
+            Assert.Equal(original, fast);
+        }
+
+        [Fact]
+        public void Test_SplitToStrings_1()
+        {
+            var original = TEXT.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+            var fast = TEXT._SplitToStrings(null);
+            Assert.True(original.Length == fast.Count);
+            bool equals = true;
+            for (int i = 0; i < original.Length; ++i)
+            {
+                if (original[i] != fast[i])
+                {
+                    equals = false;
+                }
+            }
+            Assert.True(equals);
+        }
+
+        [Fact]
+        public void Test_SplitToStrings_2()
+        {
+            var original = TEXT.Split(new string[] { "em" }, StringSplitOptions.RemoveEmptyEntries);
+            var fast = TEXT._SplitToStrings("em");
+            Assert.True(original.Length == fast.Count);
+            bool equals = true;
+            for (int i = 0; i < original.Length; ++i)
+            {
+                if (original[i] != fast[i])
+                {
+                    equals = false;
+                }
+            }
+            Assert.True(equals);
+        }
+
+        [Fact]
+        public void Test_SplitToInts()
+        {
+            var original = NUMBERS.Split(new string[] { ", " }, StringSplitOptions.RemoveEmptyEntries).Select(s => int.Parse(s)).ToArray();
+            var fast = NUMBERS._SplitToInts(", ");
+            Assert.True(original.Length == fast.Count);
+            bool equals = true;
+            for (int i = 0; i < original.Length; ++i)
+            {
+                if (original[i] != fast[i])
+                {
+                    equals = false;
+                }
+            }
+            Assert.True(equals);
+        }
+
+        [Fact]
+        public void Test_SplitAndTransform()
+        {
+            var original = TEXT.Split(new string[] { "em" }, StringSplitOptions.RemoveEmptyEntries).Select(s => new string(s.Reverse().ToArray())).ToArray();
+            var fast = TEXT._SplitAndTransform("em", s => new string(s.Reverse().ToArray()));
+            Assert.True(original.Length == fast.Count);
+            bool equals = true;
+            for (int i = 0; i < original.Length; ++i)
+            {
+                if (original[i] != fast[i])
+                {
+                    equals = false;
+                }
+            }
+            Assert.True(equals);
+        }
+
+        [Fact]
+        public void Test_IndexOf_1()
+        {
+            var original = TEXT.IndexOf("em");
+            var fast = TEXT._IndexOf("em");
+            Assert.Equal(original, fast);
+        }
+
+        [Fact]
+        public void Test_IndexOf_2()
+        {
+            var original = TEXT.IndexOf("window");
+            var fast = TEXT._IndexOf("window");
+            Assert.Equal(original, fast);
+        }
+
+        [Fact]
+        public void Test_LastIndexOf_1()
+        {
+            var original = TEXT.LastIndexOf("em");
+            var fast = TEXT._LastIndexOf("em");
+            Assert.Equal(original, fast);
+        }
+
+        [Fact]
+        public void Test_LastIndexOf_2()
+        {
+            var original = TEXT.IndexOf("window");
+            var fast = TEXT._LastIndexOf("window");
+            Assert.Equal(original, fast);
+        }
+
+        [Fact]
+        public void Test_StartsWith()
+        {
+            var original = TEXT.StartsWith("em");
+            var fast = TEXT._StartsWith("em");
+            Assert.Equal(original, fast);
+        }
+
+        [Fact]
+        public void Test_EndsWith()
+        {
+            var original = TEXT.EndsWith("em");
+            var fast = TEXT._EndsWith("em");
             Assert.Equal(original, fast);
         }
 

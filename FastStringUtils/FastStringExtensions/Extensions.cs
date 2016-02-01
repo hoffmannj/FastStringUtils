@@ -300,14 +300,22 @@ namespace FastStringExtensions
                             for (j = 0, length = 0; j < dlen && _cp[currentIndex + j] == _dp[j]; ++j, ++length) ;
                             if (length == dlen)
                             {
-                                if (currentIndex > startIndex) result.Add(new string(_cp, startIndex, currentIndex - startIndex));
+                                if (currentIndex > startIndex)
+                                {
+                                    result.Add(InternalSubstringRaw(_cp, startIndex, currentIndex - startIndex));
+                                }
                                 currentIndex = startIndex = currentIndex + dlen;
                             }
                             else ++currentIndex;
                         }
-                        if (currentIndex > startIndex)
+                        if (currentIndex < slen)
                         {
-                            result.Add(new string(_cp, startIndex, currentIndex - startIndex));
+                            currentIndex = slen - 1;
+                            if (currentIndex >= startIndex &&
+                                (dlen > 1 || (dlen == 1 && _cp[currentIndex] != _dp[0])))
+                            {
+                                result.Add(InternalSubstringRaw(_cp, startIndex, currentIndex - startIndex + 1));
+                            }
                         }
                     }
                 }
@@ -333,19 +341,32 @@ namespace FastStringExtensions
                 {
                     fixed (char* _cp = text, _dp = delimiter)
                     {
+                        for (j = 0, length = 0; j < dlen && _cp[currentIndex + j] == _dp[j]; ++j, ++length) ;
+                        if (length == dlen)
+                        {
+                            currentIndex = startIndex = dlen;
+                        }
                         while (currentIndex < diff)
                         {
                             for (j = 0, length = 0; j < dlen && _cp[currentIndex + j] == _dp[j]; ++j, ++length) ;
-                            if (length == dlen && currentIndex > startIndex)
+                            if (length == dlen)
                             {
-                                result.Add(Convert.ToInt32(new string(_cp, startIndex, currentIndex - startIndex)));
-                                currentIndex = startIndex = currentIndex + dlen - 1;
+                                if (currentIndex > startIndex)
+                                {
+                                    result.Add(Convert.ToInt32(InternalSubstringRaw(_cp, startIndex, currentIndex - startIndex)));
+                                }
+                                currentIndex = startIndex = currentIndex + dlen;
                             }
-                            ++currentIndex;
+                            else ++currentIndex;
                         }
-                        if (currentIndex > startIndex)
+                        if (currentIndex < slen)
                         {
-                            result.Add(Convert.ToInt32(new string(_cp, startIndex, slen - startIndex)));
+                            currentIndex = slen - 1;
+                            if (currentIndex >= startIndex &&
+                                (dlen > 1 || (dlen == 1 && _cp[currentIndex] != _dp[0])))
+                            {
+                                result.Add(Convert.ToInt32(InternalSubstringRaw(_cp, startIndex, currentIndex - startIndex + 1)));
+                            }
                         }
                     }
                 }
@@ -371,19 +392,32 @@ namespace FastStringExtensions
                 {
                     fixed (char* _cp = text, _dp = delimiter)
                     {
+                        for (j = 0, length = 0; j < dlen && _cp[currentIndex + j] == _dp[j]; ++j, ++length) ;
+                        if (length == dlen)
+                        {
+                            currentIndex = startIndex = dlen;
+                        }
                         while (currentIndex < diff)
                         {
                             for (j = 0, length = 0; j < dlen && _cp[currentIndex + j] == _dp[j]; ++j, ++length) ;
-                            if (length == dlen && currentIndex > startIndex)
+                            if (length == dlen)
                             {
-                                result.Add(transform(new string(_cp, startIndex, currentIndex - startIndex)));
-                                currentIndex = startIndex = currentIndex + dlen - 1;
+                                if (currentIndex > startIndex)
+                                {
+                                    result.Add(transform(InternalSubstringRaw(_cp, startIndex, currentIndex - startIndex)));
+                                }
+                                currentIndex = startIndex = currentIndex + dlen;
                             }
-                            ++currentIndex;
+                            else ++currentIndex;
                         }
-                        if (currentIndex > startIndex)
+                        if (currentIndex < slen)
                         {
-                            result.Add(transform(new string(_cp, startIndex, slen - startIndex)));
+                            currentIndex = slen - 1;
+                            if (currentIndex >= startIndex &&
+                                (dlen > 1 || (dlen == 1 && _cp[currentIndex] != _dp[0])))
+                            {
+                                result.Add(transform(InternalSubstringRaw(_cp, startIndex, currentIndex - startIndex + 1)));
+                            }
                         }
                     }
                 }
@@ -459,6 +493,55 @@ namespace FastStringExtensions
             return -1;
         }
 
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static bool _StartsWith(this string text, string part)
+        {
+            AssertNonNull(text);
+            if (string.IsNullOrEmpty(part)) return false;
+            int slen = text.Length;
+            int plen = part.Length;
+            int diff = slen - plen;
+            if (diff < 0) return false;
+            int currentIndex = 0;
+            int j, length;
+            unchecked
+            {
+                unsafe
+                {
+                    fixed (char* _cp = text, _dp = part)
+                    {
+                        for (j = 0, length = 0; j < plen && _cp[currentIndex + j] == _dp[j]; ++j, ++length) ;
+                        return length == plen;
+                    }
+                }
+            }
+        }
+
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static bool _EndsWith(this string text, string part)
+        {
+            AssertNonNull(text);
+            if (string.IsNullOrEmpty(part)) return false;
+            int slen = text.Length;
+            int plen = part.Length;
+            int diff = slen - plen;
+            if (diff < 0) return false;
+            int currentIndex = diff;
+            int j, length;
+            unchecked
+            {
+                unsafe
+                {
+                    fixed (char* _cp = text, _dp = part)
+                    {
+                        for (j = 0, length = 0; j < plen && _cp[currentIndex + j] == _dp[j]; ++j, ++length) ;
+                        return length == plen;
+                    }
+                }
+            }
+        }
+
+
 
 
 
@@ -495,12 +578,27 @@ namespace FastStringExtensions
                 if (textLength == 0 || length == 0) return string.Empty;
                 if (startIndex == 0 && length == textLength) return text;
 
+                unsafe
+                {
+                    fixed (char* cp = text)
+                    {
+                        return InternalSubstringRaw(cp, startIndex, length);
+                    }
+                }
+            }
+        }
+
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        private unsafe static string InternalSubstringRaw(char* text, int startIndex, int length)
+        {
+            unchecked
+            {
                 var result = FastAllocateString(length);
                 unsafe
                 {
-                    fixed (char* cp = text, tp = result)
+                    fixed (char* tp = result)
                     {
-                        Memcpy((byte*)tp, (byte*)(cp + startIndex), (uint)length << 1);
+                        Memcpy((byte*)tp, (byte*)(text + startIndex), (uint)(length << 1));
                     }
                 }
                 return result;
