@@ -49,4 +49,6 @@ Ankh.NoLoad
 # Include DLLs if they're in the NuGet packages directory
 !/FastStringUtils/packages/*/lib/*.dll
 !/FastStringUtils/packages/*/lib/*/*.dll
+!/FastStringUtils/packages/*/build/*.dll
+!/FastStringUtils/packages/*/build/*/*.dll
 !/FastStringUtils/packages/**/*.dll
