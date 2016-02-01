@@ -272,6 +272,193 @@ namespace FastStringExtensions
 
         }
 
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static List<string> _SplitToStrings(this string text, string delimiter)
+        {
+            AssertNonNull(text);
+            if (string.IsNullOrEmpty(delimiter)) delimiter = " ";
+            int slen = text.Length;
+            int dlen = delimiter.Length;
+            int diff = slen - dlen + 1;
+            var result = new List<string>(slen);
+            int currentIndex = 0;
+            int startIndex = 0;
+            int j, length;
+            unchecked
+            {
+                unsafe
+                {
+                    fixed (char* _cp = text, _dp = delimiter)
+                    {
+                        for (j = 0, length = 0; j < dlen && _cp[currentIndex + j] == _dp[j]; ++j, ++length) ;
+                        if (length == dlen)
+                        {
+                            currentIndex = startIndex = dlen;
+                        }
+                        while (currentIndex < diff)
+                        {
+                            for (j = 0, length = 0; j < dlen && _cp[currentIndex + j] == _dp[j]; ++j, ++length) ;
+                            if (length == dlen)
+                            {
+                                if (currentIndex > startIndex) result.Add(new string(_cp, startIndex, currentIndex - startIndex));
+                                currentIndex = startIndex = currentIndex + dlen;
+                            }
+                            else ++currentIndex;
+                        }
+                        if (currentIndex > startIndex)
+                        {
+                            result.Add(new string(_cp, startIndex, currentIndex - startIndex));
+                        }
+                    }
+                }
+            }
+            return result;
+        }
+
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static List<int> _SplitToInts(this string text, string delimiter)
+        {
+            AssertNonNull(text);
+            if (string.IsNullOrEmpty(delimiter)) delimiter = " ";
+            int slen = text.Length;
+            int dlen = delimiter.Length;
+            int diff = slen - dlen;
+            var result = new List<int>(slen);
+            int currentIndex = 0;
+            int startIndex = 0;
+            int j, length;
+            unchecked
+            {
+                unsafe
+                {
+                    fixed (char* _cp = text, _dp = delimiter)
+                    {
+                        while (currentIndex < diff)
+                        {
+                            for (j = 0, length = 0; j < dlen && _cp[currentIndex + j] == _dp[j]; ++j, ++length) ;
+                            if (length == dlen && currentIndex > startIndex)
+                            {
+                                result.Add(Convert.ToInt32(new string(_cp, startIndex, currentIndex - startIndex)));
+                                currentIndex = startIndex = currentIndex + dlen - 1;
+                            }
+                            ++currentIndex;
+                        }
+                        if (currentIndex > startIndex)
+                        {
+                            result.Add(Convert.ToInt32(new string(_cp, startIndex, slen - startIndex)));
+                        }
+                    }
+                }
+            }
+            return result;
+        }
+
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static List<T> _SplitAndTransform<T>(this string text, string delimiter, Func<string, T> transform)
+        {
+            AssertNonNull(text);
+            if (string.IsNullOrEmpty(delimiter)) delimiter = " ";
+            int slen = text.Length;
+            int dlen = delimiter.Length;
+            int diff = slen - dlen;
+            var result = new List<T>(slen);
+            int currentIndex = 0;
+            int startIndex = 0;
+            int j, length;
+            unchecked
+            {
+                unsafe
+                {
+                    fixed (char* _cp = text, _dp = delimiter)
+                    {
+                        while (currentIndex < diff)
+                        {
+                            for (j = 0, length = 0; j < dlen && _cp[currentIndex + j] == _dp[j]; ++j, ++length) ;
+                            if (length == dlen && currentIndex > startIndex)
+                            {
+                                result.Add(transform(new string(_cp, startIndex, currentIndex - startIndex)));
+                                currentIndex = startIndex = currentIndex + dlen - 1;
+                            }
+                            ++currentIndex;
+                        }
+                        if (currentIndex > startIndex)
+                        {
+                            result.Add(transform(new string(_cp, startIndex, slen - startIndex)));
+                        }
+                    }
+                }
+            }
+            return result;
+        }
+
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static int _IndexOf(this string text, string part)
+        {
+            AssertNonNull(text);
+            if (string.IsNullOrEmpty(part)) return -1;
+            int slen = text.Length;
+            int plen = part.Length;
+            int diff = slen - plen;
+            if (diff < 0) return -1;
+            int currentIndex = 0;
+            int j, length;
+            unchecked
+            {
+                unsafe
+                {
+                    fixed (char* _cp = text, _dp = part)
+                    {
+                        char pfc = *_dp;
+                        while (currentIndex < diff)
+                        {
+                            for (; currentIndex < slen && _cp[currentIndex] != pfc; ++currentIndex) ;
+                            for (j = 0, length = 0; j < plen && _cp[currentIndex + j] == _dp[j]; ++j, ++length) ;
+                            if (length == plen)
+                            {
+                                return currentIndex;
+                            }
+                            ++currentIndex;
+                        }
+                    }
+                }
+            }
+            return -1;
+        }
+
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static int _LastIndexOf(this string text, string part)
+        {
+            AssertNonNull(text);
+            if (string.IsNullOrEmpty(part)) return -1;
+            int slen = text.Length;
+            int plen = part.Length;
+            int diff = slen - plen;
+            if (diff < 0) return -1;
+            int currentIndex = diff - 1;
+            int j, length;
+            unchecked
+            {
+                unsafe
+                {
+                    fixed (char* _cp = text, _dp = part)
+                    {
+                        char pfc = *_dp;
+                        while (currentIndex >= 0)
+                        {
+                            for (; currentIndex >= 0 && _cp[currentIndex] != pfc; --currentIndex) ;
+                            for (j = 0, length = 0; j < plen && _cp[currentIndex + j] == _dp[j]; ++j, ++length) ;
+                            if (length == plen)
+                            {
+                                return currentIndex;
+                            }
+                            --currentIndex;
+                        }
+                    }
+                }
+            }
+            return -1;
+        }
+
 
 
 
