@@ -6,7 +6,6 @@
 [Oo]bj
 [Bb]in
 [Dd]ebug
-[Bb]uild/
 *.user
 *.suo
 *.exe
@@ -47,8 +46,8 @@ Ankh.NoLoad
 .svn
 
 # Include DLLs if they're in the NuGet packages directory
-!/FastStringUtils/packages/*/lib/*.dll
-!/FastStringUtils/packages/*/lib/*/*.dll
-!/FastStringUtils/packages/*/build/*.dll
-!/FastStringUtils/packages/*/build/*/*.dll
-!/FastStringUtils/packages/**/*.dll
+!/FastStringUtils/packages/*/lib/*.*
+!/FastStringUtils/packages/*/lib/*/*.*
+!/FastStringUtils/packages/*/build/*.*
+!/FastStringUtils/packages/*/build/*/*.*
+!/**/packages/**/*.*
