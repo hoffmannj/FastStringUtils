@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -9,7 +10,7 @@ namespace FastStringExtensions
     public static class Extensions
     {
         private static Func<int, string> FastAllocateString = null;
-        private unsafe delegate void MemcpyDelegate(byte* dest, byte* src, int len);
+        private unsafe delegate void MemcpyDelegate(byte* dest, byte* src, uint len);
         private static MemcpyDelegate Memcpy = null;
 
         static Extensions()
@@ -32,13 +33,17 @@ namespace FastStringExtensions
 
         private static void InitMemcpy()
         {
-            var memcpys = typeof(Buffer).GetMethods(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).Where(m => m.Name == "Memcpy");
+            var memcpys = typeof(Buffer).GetMethods(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).Where(m => m.Name == "Memmove");
             try
             {
                 foreach (var f in memcpys)
                 {
                     var pa = f.GetParameters();
-                    if (pa.Length == 3 && pa[0].ParameterType == typeof(byte*) && pa[1].ParameterType == typeof(byte*) && pa[2].ParameterType == typeof(int)) Memcpy = (MemcpyDelegate)f.CreateDelegate(typeof(MemcpyDelegate));
+                    if (pa.Length == 3 && pa[0].ParameterType == typeof(byte*) && pa[1].ParameterType == typeof(byte*) && pa[2].ParameterType == typeof(uint))
+                    {
+                        Memcpy = (MemcpyDelegate)f.CreateDelegate(typeof(MemcpyDelegate));
+                        break;
+                    }
                 }
             }
             catch { }
@@ -48,17 +53,271 @@ namespace FastStringExtensions
             }
         }
 
-        private static unsafe void SecondaryMemCpy(byte* dst, byte* src, int length)
+        private static unsafe void SecondaryMemCpy(byte* dst, byte* src, uint length)
         {
-            if (length == 0) return;
-            uint offset = 0;
-            uint len4 = (uint)length >> 2;
-            uint* from = (uint*)src;
-            uint* to = (uint*)dst;
-            for (uint i = 0; i < len4; ++i, offset += 4) to[i] = from[i];
-            len4 = (uint)length % 4;
-            for (uint i = 0; i < len4; ++i) dst[offset + i] = src[offset + i];
+            unchecked
+            {
+                if (length == 0) return;
+                uint offset = 0;
+                uint len4 = (uint)length >> 2;
+                uint* from = (uint*)src;
+                uint* to = (uint*)dst;
+                for (uint i = 0; i < len4; ++i, offset += 4) to[i] = from[i];
+                len4 = (uint)length % 4;
+                for (uint i = 0; i < len4; ++i) dst[offset + i] = src[offset + i];
+            }
         }
 
+
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static string _Substring(this string text, int startIndex)
+        {
+            return InternalSubstring(text, startIndex, text.Length - startIndex);
+        }
+
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static string _Substring(this string text, int startIndex, int length)
+        {
+            return InternalSubstring(text, startIndex, length);
+        }
+
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static string _ToLower(this string text)
+        {
+            AssertNonNull(text);
+            int slen = text.Length;
+            var result = FastAllocateString(slen);
+            unchecked
+            {
+                unsafe
+                {
+                    fixed (char* _cp = text, _tp = result)
+                    {
+                        Memcpy((byte*)_tp, (byte*)_cp, (uint)text.Length << 1);
+
+                        char* cp = _cp;
+                        char* tp = _tp;
+                        char* end = cp + slen;
+                        int c;
+                        while (cp < end)
+                        {
+                            c = *(cp++);
+                            if (c >= 'A' && c <= 'Z')
+                            {
+                                *tp = (char)(c + 32);
+                            }
+                            ++tp;
+                        }
+                        return result;
+                    }
+                }
+            }
+        }
+
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static string _ToUpper(this string text)
+        {
+            AssertNonNull(text);
+            int slen = text.Length;
+            var result = FastAllocateString(slen);
+            unchecked
+            {
+                unsafe
+                {
+                    fixed (char* _cp = text, _tp = result)
+                    {
+                        Memcpy((byte*)_tp, (byte*)_cp, (uint)text.Length << 1);
+
+                        char* cp = _cp;
+                        char* tp = _tp;
+                        char* end = cp + slen;
+                        int c;
+                        while (cp < end)
+                        {
+                            c = *(cp++);
+                            if (c >= 'a' && c <= 'z')
+                            {
+                                *tp = (char)(c - 32);
+                            }
+                            ++tp;
+                        }
+                        return result;
+                    }
+                }
+            }
+        }
+
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static string _Trim(this string text)
+        {
+            AssertNonNull(text);
+            int slen = text.Length;
+            int currentIndex = 0;
+            int lastIndex = slen - 1;
+            unchecked
+            {
+                unsafe
+                {
+                    fixed (char* _cp = text)
+                    {
+                        for (; currentIndex < slen && _cp[currentIndex] == ' '; ++currentIndex) ;
+                        for (; lastIndex >= currentIndex && _cp[lastIndex] == ' '; --lastIndex) ;
+                        return InternalSubstring(text, currentIndex, lastIndex - currentIndex + 1);
+                    }
+                }
+            }
+        }
+
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static string _TrimStart(this string text)
+        {
+            AssertNonNull(text);
+            int slen = text.Length;
+            int currentIndex = 0;
+            int lastIndex = slen - 1;
+            unchecked
+            {
+                unsafe
+                {
+                    fixed (char* _cp = text)
+                    {
+                        for (; currentIndex < slen && _cp[currentIndex] == ' '; ++currentIndex) ;
+                        return InternalSubstring(text, currentIndex, lastIndex - currentIndex + 1);
+                    }
+                }
+            }
+        }
+
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static string _TrimEnd(this string text)
+        {
+            AssertNonNull(text);
+            int slen = text.Length;
+            int currentIndex = 0;
+            int lastIndex = slen - 1;
+            unchecked
+            {
+                unsafe
+                {
+                    fixed (char* _cp = text)
+                    {
+                        for (; lastIndex >= currentIndex && _cp[lastIndex] == ' '; --lastIndex) ;
+                        return InternalSubstring(text, currentIndex, lastIndex - currentIndex + 1);
+                    }
+                }
+            }
+        }
+
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static int _CompareTo(this string text, string other)
+        {
+            AssertNonNull(text);
+            if (other == null) return 1;
+            int slen = text.Length;
+            int olen = other.Length;
+            int minLen = slen < olen ? slen : olen;
+            unchecked
+            {
+                unsafe
+                {
+                    fixed (char* _cp = text, _op = other)
+                    {
+                        if (_cp == _op) return 0;
+                        int j = 0;
+                        while (j < minLen && _cp[j] == _op[j]) ++j;
+                        if (j < minLen)
+                        {
+                            if (_cp[j] < _op[j]) return -1;
+                            if (_cp[j] > _op[j]) return 1;
+                        }
+                        if (slen == olen) return 0;
+                        if (slen < olen) return -1;
+                        return 1;
+                    }
+                }
+            }
+        }
+
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static int _ComparePart(this string text, int textStartIndex, string other, int otherStartIndex, int length)
+        {
+            AssertNonNull(text);
+            if (other == null) return 1;
+            unchecked
+            {
+                unsafe
+                {
+                    fixed (char* _cp = text, _dp = other)
+                    {
+                        char* cp = _cp + textStartIndex;
+                        char* dp = _dp + otherStartIndex;
+                        int minLen = length;
+                        int less = 0;
+                        if (text.Length - textStartIndex < minLen)
+                        {
+                            minLen = text.Length - textStartIndex;
+                            less = -1;
+                        }
+                        if (other.Length - otherStartIndex < minLen)
+                        {
+                            minLen = other.Length - otherStartIndex;
+                            less = 1;
+                        }
+                        int n = 0;
+                        for (; n < minLen && cp[n] == dp[n]; ++n) ;
+                        return n == minLen ? less : (cp[n] < dp[n] ? -1 : 1);
+                    }
+                }
+            }
+
+        }
+
+
+
+
+
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        private static void AssertNonNull(string str)
+        {
+            if (str == null)
+            {
+                throw new NullReferenceException();
+            }
+        }
+
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        private static string InternalSubstring(string text, int startIndex, int length)
+        {
+            AssertNonNull(text);
+            unchecked
+            {
+                int textLength = text.Length;
+                int remainingLength = textLength - startIndex;
+
+                //Bounds Checking.
+                if (startIndex < 0 || startIndex >= textLength)
+                {
+                    throw new ArgumentOutOfRangeException("startIndex");
+                }
+
+                if (remainingLength < 0 || remainingLength < length || length < 0)
+                {
+                    throw new ArgumentOutOfRangeException("length");
+                }
+
+                if (textLength == 0 || length == 0) return string.Empty;
+                if (startIndex == 0 && length == textLength) return text;
+
+                var result = FastAllocateString(length);
+                unsafe
+                {
+                    fixed (char* cp = text, tp = result)
+                    {
+                        Memcpy((byte*)tp, (byte*)(cp + startIndex), (uint)length << 1);
+                    }
+                }
+                return result;
+            }
+        }
     }
 }
