@@ -273,6 +273,35 @@ namespace FastStringExtensions
         }
 
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static bool _Contains(this string text, string value)
+        {
+            AssertNonNull(text);
+            if (value == null) throw new ArgumentNullException("value");
+            if (string.IsNullOrEmpty(value)) return false;
+            int slen = text.Length;
+            int dlen = value.Length;
+            int diff = slen - dlen + 1;
+            int currentIndex = 0;
+            int j, length;
+            unchecked
+            {
+                unsafe
+                {
+                    fixed (char* _cp = text, _dp = value)
+                    {
+                        while (currentIndex < diff)
+                        {
+                            for (j = 0, length = 0; j < dlen && _cp[currentIndex + j] == _dp[j]; ++j, ++length) ;
+                            if (length == dlen) return true;
+                            else ++currentIndex;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         public static List<string> _SplitToStrings(this string text, string delimiter)
         {
             AssertNonNull(text);
@@ -541,6 +570,52 @@ namespace FastStringExtensions
             }
         }
 
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static char[] _ToCharArray(this string text)
+        {
+            AssertNonNull(text);
+            int length = text.Length;
+            var result = new char[length];
+            unchecked
+            {
+                unsafe
+                {
+                    fixed (char* cp = text, tp = result)
+                    {
+                        Memcpy((byte*)tp, (byte*)cp, (uint)(length << 1));
+                    }
+                }
+            }
+            return result;
+        }
+
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static char[] _ToCharArray(this string text, int startIndex, int length)
+        {
+            AssertNonNull(text);
+            int len = text.Length;
+            if (startIndex < 0 || startIndex >= len)
+            {
+                throw new ArgumentOutOfRangeException("startIndex");
+            }
+            if (length < 0 || length > len - startIndex)
+            {
+                throw new ArgumentOutOfRangeException("length");
+            }
+            if (length == 0) return new char[0];
+            var result = new char[length];
+            unchecked
+            {
+                unsafe
+                {
+                    fixed (char* cp = text, tp = result)
+                    {
+                        Memcpy((byte*)tp, (byte*)(cp+startIndex), (uint)(length << 1));
+                    }
+                }
+            }
+            return result;
+        }
 
 
 
