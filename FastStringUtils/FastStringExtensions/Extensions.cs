@@ -97,16 +97,12 @@ namespace FastStringExtensions
 
                         char* cp = _cp;
                         char* tp = _tp;
-                        char* end = cp + slen;
-                        int c;
-                        while (cp < end)
+                        for (; slen > 0; ++cp, ++tp, --slen)
                         {
-                            c = *(cp++);
-                            if (c >= 'A' && c <= 'Z')
+                            if (*cp >= 'A' && *cp <= 'Z')
                             {
-                                *tp = (char)(c + 32);
+                                *tp = (char)(*cp + 32);
                             }
-                            ++tp;
                         }
                         return result;
                     }
@@ -127,19 +123,14 @@ namespace FastStringExtensions
                     fixed (char* _cp = text, _tp = result)
                     {
                         Memcpy((byte*)_tp, (byte*)_cp, (uint)text.Length << 1);
-
                         char* cp = _cp;
                         char* tp = _tp;
-                        char* end = cp + slen;
-                        int c;
-                        while (cp < end)
+                        for (; slen > 0; ++cp, ++tp, --slen)
                         {
-                            c = *(cp++);
-                            if (c >= 'a' && c <= 'z')
+                            if (*cp >= 'a' && *cp <= 'z')
                             {
-                                *tp = (char)(c - 32);
+                                *tp = (char)(*cp - 32);
                             }
-                            ++tp;
                         }
                         return result;
                     }
