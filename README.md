@@ -12,6 +12,7 @@ _Contains
 _EndsWith  
 _IndexOf  
 _LastIndexOf  
+_Reverse  
 _SplitAndTransform<T>  
 _SplitToInts  
 _SplitToStrings  
