@@ -4,7 +4,7 @@
 
 Small replacement functions for Strings in C#.
 
-Implemented functions:
+Implemented functions:  
 _ComparePart  
 _CompareTo  
 _Contains  
