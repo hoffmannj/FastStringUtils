@@ -524,6 +524,24 @@ namespace FastStringExtensions.Tests
             });
         }
 
+        [Fact]
+        public void Test_Reverse()
+        {
+            var original = new string(TEXT.Reverse().ToArray());
+            var fast = TEXT._Reverse();
+            Assert.Equal(original, fast);
+        }
+
+        [Fact]
+        public void Test_Reverse_Exception()
+        {
+            string s = null;
+            Assert.Throws<NullReferenceException>(() =>
+            {
+                var fast = s._Reverse();
+            });
+        }
+
         /*[Fact]
         public void Test_Substring_speed()
         {

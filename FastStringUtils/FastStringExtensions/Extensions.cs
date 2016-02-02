@@ -608,6 +608,30 @@ namespace FastStringExtensions
             return result;
         }
 
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static string _Reverse(this string text)
+        {
+            AssertNonNull(text);
+            int slen = text.Length;
+            var result = FastAllocateString(slen);
+            unchecked
+            {
+                unsafe
+                {
+                    fixed (char* _cp = text, _tp = result)
+                    {
+                        char* cp = _cp + slen - 1;
+                        char* tp = _tp;
+                        for (; slen > 0; --cp, ++tp, --slen)
+                        {
+                            *tp = *cp;
+                        }
+                        return result;
+                    }
+                }
+            }
+        }
+
 
 
 
