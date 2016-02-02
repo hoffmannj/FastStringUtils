@@ -2,7 +2,8 @@
 
 ![Build status](https://ci.appveyor.com/api/projects/status/6j3crpbosf1d0bq0?svg=true)
 
-Small replacement functions for Strings in C#.
+Small replacement functions for Strings in C#.  
+Most of them are a bit (or a lot) faster then the implementation in the .NET framework.  
 
 Implemented functions:  
 _ComparePart  
